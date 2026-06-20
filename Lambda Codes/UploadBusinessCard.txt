@@ -1,0 +1,52 @@
+import json
+import boto3
+import base64
+import uuid
+
+s3 = boto3.client('s3')
+
+BUCKET_NAME = "business-card-organizer-v2"
+
+def lambda_handler(event, context):
+
+    try:
+
+        body = json.loads(event.get('body', '{}'))
+
+        if 'file' not in body:
+            return {
+                "statusCode": 400,
+                "body": json.dumps({
+                    "error": "Missing file field"
+                })
+            }
+
+        file_content = base64.b64decode(body['file'])
+
+        filename = str(uuid.uuid4()) + ".jpg"
+
+        s3.put_object(
+            Bucket=BUCKET_NAME,
+            Key=f"uploads/{filename}",
+            Body=file_content
+        )
+
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*"
+            },
+            "body": json.dumps({
+                "message": "Uploaded Successfully",
+                "filename": filename
+            })
+        }
+
+    except Exception as e:
+
+        return {
+            "statusCode": 500,
+            "body": json.dumps({
+                "error": str(e)
+            })
+        }
